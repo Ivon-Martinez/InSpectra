@@ -26,129 +26,282 @@
         .hidden-input {
             display: none;
         }
+        /* Ensure canvas is responsive */
+        canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans flex items-center justify-center min-h-screen p-4">
 
-    <!-- Main container centered on the page --><div class="bg-white w-full max-w-2xl p-6 sm:p-8 rounded-xl shadow-lg">
+    <!-- Main container centered on the page --><div class="bg-white w-full max-w-4xl p-6 sm:p-8 rounded-xl shadow-lg">
 
         <!-- Clear title --><div class="text-center mb-6">
             <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">
-                Home Inspection: Crack Detector
+                Home Inspection: Crack Comparison
             </h1>
-            <p class="text-gray-500 mt-1">Upload a photo to get an AI-powered analysis.</p>
+            <p class="text-gray-500 mt-1">Upload a "Before" and "After" photo for an AI-powered analysis.</p>
+            <p id="user-id-display" class="text-xs text-gray-400 mt-2"></p>
         </div>
 
-        <!-- File Upload Area --><div class="mb-4">
-            <!-- Styled "Upload Photo" button (label for hidden input) --><label for="file-upload" class="w-full cursor-pointer bg-blue-600 text-white text-center font-medium py-3 px-5 rounded-lg shadow-md hover:bg-blue-700 transition duration-300 block">
-                1. Upload a Photo
-            </label>
-            <input id="file-upload" type="file" accept="image/*" class="hidden-input">
-            <p class="text-xs text-gray-500 text-center mt-2">Supports .png, .jpg, .webp</p>
-        </div>
-
-        <!-- "Detect Cracks" button (initially disabled) --><button id="detect-button" class="w-full bg-green-600 text-white font-medium py-3 px-5 rounded-lg shadow-md hover:bg-green-700 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
-            2. Detect Cracks
-        </button>
-
-        <!-- "Results" area (hidden by default) --><div id="results-section" class="mt-8 hidden">
+        <!-- "Results" area (hidden by default) --><div id="results-section" class="mt-8">
             <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Analysis Results</h2>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- NEW: Two-column grid for Before/After -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-                <!-- 1. Image preview column --><div>
-                    <h3 class="text-lg font-medium text-gray-600 mb-2">Your Image:</h3>
-                    <!-- We are using the <img> tag again -->
-                    <div class="w-full bg-gray-50 rounded-lg shadow-inner flex items-center justify-center min-h-[128px]">
-                        <img id="image-preview" src="#" alt="Uploaded building photo" class="rounded-lg shadow-md w-full object-contain hidden">
+                <!-- === BEFORE COLUMN === -->
+                <div id="before-col" class="flex flex-col gap-4">
+                    <h3 class="text-lg font-bold text-gray-600 mb-2 text-center">BEFORE</h3>
+
+                    <!-- *** CANVAS for Image preview *** -->
+                    <div class="w-full bg-gray-50 rounded-lg shadow-inner flex items-center justify-center min-h-[128px] h-64">
+                        <canvas id="before-image-canvas" class="rounded-lg shadow-md"></canvas>
+                    </div>
+
+                    <!-- File Upload Button -->
+                    <label for="before-file-upload" class="w-full cursor-pointer bg-blue-600 text-white text-center font-medium py-3 px-5 rounded-lg shadow-md hover:bg-blue-700 transition duration-300 block">
+                        Upload "Before" Photo
+                    </label>
+                    <input id="before-file-upload" type="file" accept="image/*" class="hidden-input">
+
+                    <!-- Analysis Box -->
+                    <div class="flex-grow">
+                        <h4 class="text-md font-medium text-gray-600 mb-2">AI Analysis:</h4>
+                        <div id="before-loader" class="flex flex-col justify-center items-center h-32 text-gray-500 hidden">
+                            <div class="loader"></div>
+                            <p class="mt-3">Analyzing...</p>
+                        </div>
+                        <div id="before-analysis-output" class="p-4 rounded-lg min-h-[128px] transition-all duration-300 bg-gray-50">
+                            <p class="text-gray-500">Waiting for image...</p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 2. <div> for loading spinner and text analysis --><div>
-                    <h3 class="text-lg font-medium text-gray-600 mb-2">AI Analysis:</h3>
+                <!-- === AFTER COLUMN === -->
+                <div id="after-col" class="flex flex-col gap-4">
+                    <h3 class="text-lg font-bold text-gray-600 mb-2 text-center">AFTER</h3>
 
-                    <!-- <div> for a loading spinner (initially hidden) --><div id="loader" class="flex flex-col justify-center items-center h-32 text-gray-500 hidden">
-                        <div class="loader"></div>
-                        <p class="mt-3">Analyzing, please wait...</p>
+                    <!-- *** CANVAS for Image preview *** -->
+                    <div class="w-full bg-gray-50 rounded-lg shadow-inner flex items-center justify-center min-h-[128px] h-64">
+                        <canvas id="after-image-canvas" class="rounded-lg shadow-md"></canvas>
                     </div>
 
-                    <!-- <div> where the AI's text analysis will appear -->
-                    <!-- This <div> will still be dynamically styled based on criticality -->
-                    <div id="analysis-output" class="p-4 rounded-lg min-h-[128px] transition-all duration-300 bg-gray-50">
-                        <p class="text-gray-500">Upload an image and click "Detect Cracks" to see the analysis here.</p>
+                    <!-- File Upload Button -->
+                    <label for="after-file-upload" class="w-full cursor-pointer bg-blue-600 text-white text-center font-medium py-3 px-5 rounded-lg shadow-md hover:bg-blue-700 transition duration-300 block">
+                        Upload "After" Photo
+                    </label>
+                    <input id="after-file-upload" type="file" accept="image/*" class="hidden-input">
+
+                    <!-- Analysis Box -->
+                    <div class="flex-grow">
+                        <h4 class="text-md font-medium text-gray-600 mb-2">AI Analysis:</h4>
+                        <div id="after-loader" class="flex flex-col justify-center items-center h-32 text-gray-500 hidden">
+                            <div class="loader"></div>
+                            <p class="mt-3">Analyzing...</p>
+                        </div>
+                        <div id="after-analysis-output" class="p-4 rounded-lg min-h-[128px] transition-all duration-300 bg-gray-50">
+                            <p class="text-gray-500">Waiting for image...</p>
+                        </div>
                     </div>
                 </div>
+
             </div>
         </div>
 
     </div>
 
 
-    <script>
+    <!-- === JAVASCRIPT === -->
+    <script type="module">
+        // --- NEW: Firebase SDK Imports ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
         // --- Element References ---
-        const fileInput = document.getElementById('file-upload');
-        const detectButton = document.getElementById('detect-button');
-        const resultsSection = document.getElementById('results-section');
+        const beforeFileInput = document.getElementById('before-file-upload');
+        const afterFileInput = document.getElementById('after-file-upload');
 
-        const imagePreview = document.getElementById('image-preview');
+        // *** CANVAS References ***
+        const beforeImageCanvas = document.getElementById('before-image-canvas');
+        const afterImageCanvas = document.getElementById('after-image-canvas');
+        const beforeCtx = beforeImageCanvas.getContext('2d');
+        const afterCtx = afterImageCanvas.getContext('2d');
 
-        const analysisOutput = document.getElementById('analysis-output');
-        const loader = document.getElementById('loader');
+        const beforeAnalysisOutput = document.getElementById('before-analysis-output');
+        const afterAnalysisOutput = document.getElementById('after-analysis-output');
 
-        let base64Image = null; // Variable to store Base64 data
+        const beforeLoader = document.getElementById('before-loader');
+        const afterLoader = document.getElementById('after-loader');
 
-        // --- UPDATED: Event Listener for File Input (Hour 2) ---
-        fileInput.addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
+        const userIdDisplay = document.getElementById('user-id-display');
 
-        // Use FileReader to read the file as Base64
+        // --- NEW: Firebase Global Variables ---
+        let db, auth, storage;
+        let userId;
+        let appId;
+
+        // --- NEW: Image objects to hold loaded images ---
+        let beforeImage = new Image();
+        let afterImage = new Image();
+        beforeImage.crossOrigin = "Anonymous"; // Allow loading from Firebase Storage
+        afterImage.crossOrigin = "Anonymous";
+
+        // --- NEW: Helper function to get Base64 from file ---
+        function getBase64(file) {
+        return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
-        const imageDataUrl = e.target.result;
-
-        imagePreview.src = imageDataUrl;
-        imagePreview.classList.remove('hidden'); // Show the image
-        resultsSection.classList.remove('hidden');
-
-        // Store the base64 data (stripping the prefix)
-        base64Image = imageDataUrl.split(',')[1];
-
-        // Enable the detect button
-        detectButton.disabled = false;
-        detectButton.textContent = "2. Detect Cracks";
-
-        // Clear old results
-        analysisOutput.innerHTML = '<p class="text-gray-500">Ready to analyze...</p>';
-        analysisOutput.className = 'bg-gray-50 p-4 rounded-lg min-h-[128px] transition-all duration-300'; // Reset styles
+        const base64 = e.target.result.split(',')[1];
+        resolve(base64);
         };
+        reader.onerror = reject;
         reader.readAsDataURL(file);
         });
+        }
 
-        // --- Event Listener for Detect Button (Hour 3) ---
-        detectButton.addEventListener('click', () => {
-        if (!base64Image) {
-        analysisOutput.innerHTML = '<p class="text-red-600">Error: No image found. Please upload again.</p>';
+        // --- *** NEW: Function to draw highlights on canvas *** ---
+        function drawHighlights(ctx, coordinates) {
+        if (!coordinates || coordinates.length === 0) return;
+
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 3;
+
+        coordinates.forEach(coord => {
+        ctx.strokeRect(coord.x, coord.y, coord.width, coord.height);
+        });
+        }
+
+        // --- *** NEW: Mock coordinate function *** ---
+        function getMockCrackCoordinates() {
+        // In a real app, this would be an AI call.
+        // Here, we just return hard-coded values.
+        return [
+        { x: 50, y: 100, width: 20, height: 150 },
+        { x: 180, y: 220, width: 120, height: 10 }
+        ];
+        }
+
+        // --- NEW: Function to render analysis data ---
+        function renderAnalysis(data, outputEl, canvasEl, ctx, img) {
+        if (!data) {
+        ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+        outputEl.innerHTML = '<p class="text-gray-500">Waiting for image...</p>';
+        outputEl.className = 'bg-gray-50 p-4 rounded-lg min-h-[128px] transition-all duration-300';
         return;
         }
-        analyzeImage(base64Image);
+
+        // *** Draw image and highlights on canvas ***
+        img.onload = () => {
+        canvasEl.width = img.naturalWidth;
+        canvasEl.height = img.naturalHeight;
+        ctx.drawImage(img, 0, 0);
+        // Draw highlights *after* image is drawn
+        if(data.coordinates) {
+        drawHighlights(ctx, data.coordinates);
+        }
+        };
+        img.src = data.imageUrl; // This triggers the onload
+
+        // Render text analysis
+        try {
+        const analysisData = JSON.parse(data.analysisJSON);
+        let criticalityClass = '';
+        let criticalityText = analysisData.criticality || 'Unknown';
+
+        switch (analysisData.criticality) {
+        case 'High': criticalityClass = 'bg-red-100 border border-red-400 text-red-900'; break;
+        case 'Medium': criticalityClass = 'bg-yellow-100 border border-yellow-400 text-yellow-900'; break;
+        case 'Low': criticalityClass = 'bg-blue-100 border border-blue-400 text-blue-900'; break;
+        case 'None': criticalityClass = 'bg-green-100 border border-green-400 text-green-900'; break;
+        default: criticalityClass = 'bg-gray-100 border border-gray-400 text-gray-900';
+        }
+
+        outputEl.className = `p-4 rounded-lg min-h-[128px] transition-all duration-300 ${criticalityClass}`;
+        outputEl.innerHTML = `
+        <h4 class="font-bold text-lg mb-2">Criticality: ${criticalityText}</h4>
+        <div class="whitespace-pre-wrap">${analysisData.analysis || 'No analysis text provided.'}</div>
+        `;
+        } catch (parseError) {
+        console.error("JSON Parse Error:", parseError, "Raw Text:", data.analysisJSON);
+        outputEl.className = 'bg-gray-100 border border-gray-400 text-gray-900 p-4 rounded-lg min-h-[128px] transition-all duration-300';
+        outputEl.innerHTML = `<h4 class="font-bold text-lg mb-2">Analysis (Raw)</h4><p class="text-xs mb-2 text-red-700">Could not parse the AI's JSON response, showing raw text:</p><div class="whitespace-pre-wrap">${data.analysisJSON}</div>`;
+        }
+        }
+
+        // --- NEW: Main Upload and Analysis Function ---
+        async function handleImageUploadAndAnalysis(file, docId) {
+        if (!file || !userId) return;
+
+        const loader = (docId === 'before') ? beforeLoader : afterLoader;
+        const outputEl = (docId === 'before') ? beforeAnalysisOutput : afterAnalysisOutput;
+
+        loader.classList.remove('hidden');
+        outputEl.classList.add('hidden');
+
+        try {
+        // 1. Get Base64 for Gemini
+        const base64ImageData = await getBase64(file);
+
+        // 2. Upload image to Firebase Storage
+        const storagePath = `artifacts/${appId}/users/${userId}/${docId}.jpg`;
+        const storageRef = ref(storage, storagePath);
+        const uploadResult = await uploadBytes(storageRef, file);
+
+        // 3. Get the public URL for the image
+        const downloadURL = await getDownloadURL(uploadResult.ref);
+
+        // 4. Get AI analysis
+        const analysisJSON = await analyzeImageWithGemini(base64ImageData);
+
+        // 5. *** Get MOCK coordinates ***
+        const mockCoords = getMockCrackCoordinates();
+
+        // 6. Save analysis, coords, and URL to Firestore
+        const docPath = `artifacts/${appId}/users/${userId}/images/${docId}`;
+        await setDoc(doc(db, docPath), {
+        imageUrl: downloadURL,
+        analysisJSON: analysisJSON, // Save the raw JSON string
+        coordinates: mockCoords, // Save the fake coordinates
+        uploadedAt: new Date()
         });
 
-        // --- Main API Call Function (Hour 3 & 4) ---
-        async function analyzeImage(base64ImageData) {
-        // 1. Set up UI
-        loader.classList.remove('hidden');
-        analysisOutput.classList.add('hidden');
-        analysisOutput.innerHTML = '';
-        analysisOutput.className = 'p-4 rounded-lg min-h-[128px] transition-all duration-300';
-        detectButton.disabled = true;
-        detectButton.textContent = "Analyzing...";
+        loader.classList.add('hidden');
+        outputEl.classList.remove('hidden');
 
-        // 2. Define API details
-        const apiKey = ""; // Leave as-is, Canvas will handle it
+        } catch (error) {
+        console.error(`Error processing ${docId} image:`, error);
+        loader.classList.add('hidden');
+        outputEl.classList.remove('hidden');
+        outputEl.className = 'bg-red-100 border border-red-400 text-red-900 p-4 rounded-lg min-h-[128px] transition-all duration-300';
+        outputEl.textContent = `An error occurred: ${error.message}. Please double-check Firebase Storage rules.`;
+        }
+        }
+
+        // --- NEW: Event Listeners for File Inputs ---
+        beforeFileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if(file) {
+        handleImageUploadAndAnalysis(file, 'before');
+        }
+        });
+
+        afterFileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if(file) {
+        handleImageUploadAndAnalysis(file, 'after');
+        }
+        });
+
+        // --- MODIFIED: Gemini API Call Function ---
+        async function analyzeImageWithGemini(base64ImageData) {
+        const apiKey = ""; // Leave as-is
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
-        // *** This prompt remains the same, asking for JSON text analysis ***
         const systemPrompt = `You are an expert structural engineer. Analyze the image for cracks and return *ONLY* a single JSON object. Do not add markdown backticks or any other text.
         {
         "criticality": "High" | "Medium" | "Low" | "None",
@@ -164,116 +317,128 @@
 
         const userPrompt = "Analyze this image for structural cracks and return the JSON object as requested.";
 
-        // 3. Construct the payload
         const payload = {
-        contents: [
-        {
-        role: "user",
-        parts: [
-        { text: userPrompt },
-        {
-        inlineData: {
-        mimeType: "image/png",
-        data: base64ImageData
-        }
-        }
-        ]
-        }
-        ],
-        systemInstruction: {
-        parts: [{ text: systemPrompt }]
-        },
-        generationConfig: {
-        responseMimeType: "application/json",
-        }
+        contents: [ { role: "user", parts: [ { text: userPrompt }, { inlineData: { mimeType: "image/png", data: base64ImageData } } ] } ],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: { responseMimeType: "application/json" }
         };
 
-        // 4. Call the API
-        try {
-        // *** REVERTED: Back to a single API call ***
         const response = await exponentialBackoffFetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
         });
 
-        // --- Process Text Analysis (from Gemini) ---
         if (!response.ok) {
-        throw new Error(`API error: ${response.statusText} (${response.status})`);
+        const errorBody = await response.text();
+        throw new Error(`API error: ${response.statusText} (${response.status}). Body: ${errorBody}`);
         }
         const result = await response.json();
-        const candidate = result.candidates?.[0];
-        let analysisText = candidate?.content?.parts?.[0]?.text;
+        const analysisText = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
-        // 5. Displaying Results
-        if (analysisText) {
-        try {
-        const data = JSON.parse(analysisText);
-        let criticalityClass = '';
-        let criticalityText = data.criticality || 'Unknown';
-
-        switch (data.criticality) {
-        case 'High':
-        criticalityClass = 'bg-red-100 border border-red-400 text-red-900';
-        break;
-        case 'Medium':
-        criticalityClass = 'bg-yellow-100 border border-yellow-400 text-yellow-900';
-        break;
-        case 'Low':
-        criticalityClass = 'bg-blue-100 border border-blue-400 text-blue-900';
-        break;
-        case 'None':
-        criticalityClass = 'bg-green-100 border border-green-400 text-green-900';
-        break;
-        default:
-        criticalityClass = 'bg-gray-100 border border-gray-400 text-gray-900';
+        if (!analysisText) {
+        console.error("Invalid API response structure:", result);
+        throw new Error("API returned an empty analysis or invalid structure.");
+        }
+        return analysisText; // Return the raw JSON string
         }
 
-        analysisOutput.className = `p-4 rounded-lg min-h-[128px] transition-all duration-300 ${criticalityClass}`;
-        analysisOutput.innerHTML = `
-        <h4 class="font-bold text-lg mb-2">Criticality: ${criticalityText}</h4>
-        <div class="whitespace-pre-wrap">${data.analysis || 'No analysis text provided.'}</div>
-        `;
-
-        } catch (parseError) {
-        console.error("JSON Parse Error:", parseError, "Raw Text:", analysisText);
-        analysisOutput.className = 'bg-gray-100 border border-gray-400 text-gray-900 p-4 rounded-lg min-h-[128px] transition-all duration-300';
-        analysisOutput.innerHTML = `<h4 class="font-bold text-lg mb-2">Analysis (Raw)</h4><p class="text-xs mb-2 text-red-700">Could not parse the AI's JSON response, showing raw text:</p><div class="whitespace-pre-wrap">${analysisText}</div>`;
-        }
-        } else {
-        console.error("Invalid response structure:", result);
-        analysisOutput.className = 'bg-red-100 border border-red-400 text-red-900 p-4 rounded-lg min-h-[128px] transition-all duration-300';
-        analysisOutput.textContent = "Error: The analysis returned an empty or unexpected format. Please try a different image or try again.";
-        }
-
-        } catch (error) {
-        console.error("Fetch error:", error);
-        analysisOutput.className = 'bg-red-100 border border-red-400 text-red-900 p-4 rounded-lg min-h-[128px] transition-all duration-300';
-        analysisOutput.textContent = `An error occurred during the analysis. Please check your internet connection and try again. (${error.message})`;
-        } finally {
-        // 6. Clean up UI
-        loader.classList.add('hidden');
-        analysisOutput.classList.remove('hidden');
-        detectButton.disabled = false;
-        detectButton.textContent = "2. Detect Cracks";
-        }
-        }
-
-        // --- Exponential Backoff Helper (Hour 3) ---
+        // --- Exponential Backoff Helper ---
         async function exponentialBackoffFetch(url, options, retries = 5, delay = 1000) {
         for (let i = 0; i < retries; i++) {
         try {
         const response = await fetch(url, options);
-        if (response.status !== 429) { // 429 is "Too Many Requests"
-        return response;
-        }
+        if (response.status !== 429) { return response; }
+        // If 429 (Too Many Requests), wait and retry
         } catch (error) {
-        if (i === retries - 1) throw error;
+        // Network errors
+        if (i === retries - 1) throw error; // Rethrow last error
         }
-        await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+        await new Promise(resolve => setTimeout(resolve, delay * (Math.pow(2, i) + Math.random())));
         }
-        throw new Error("API call failed after multiple retries.");
+        throw new Error("API call failed after multiple retries (Too Many Requests).");
         }
+
+        // --- NEW: Firebase Initialization and Auth ---
+        async function initFirebase() {
+        try {
+        // Get config and app ID from global scope
+        if (typeof __firebase_config === 'undefined' || typeof __app_id === 'undefined') {
+        console.error("Firebase config not found. App cannot initialize.");
+        userIdDisplay.textContent = "Error: Firebase config missing. App cannot load.";
+        return;
+        }
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+        storage = getStorage(app);
+        setLogLevel('Debug');
+
+        // Sign in
+        onAuthStateChanged(auth, (user) => {
+        if (user) {
+        console.log("User is signed in:", user.uid);
+        userId = user.uid;
+        userIdDisplay.textContent = `User ID: ${userId}`;
+
+        // User is signed in, attach Firestore listeners
+        setupListeners();
+        } else {
+        console.log("User is not signed in, attempting sign-in...");
+        // No user, attempt sign-in
+        if (typeof __initial_auth_token !== 'undefined') {
+        signInWithCustomToken(auth, __initial_auth_token).catch((err) => {
+        console.error("Custom token sign-in error:", err);
+        signInAnonymously(auth).catch(err => console.error("Anonymous sign-in error:", err));
+        });
+        } else {
+        signInAnonymously(auth).catch(err => console.error("Anonymous sign-in error:", err));
+        }
+        }
+        });
+        } catch (error) {
+        console.error("Firebase Init Error:", error);
+        userIdDisplay.textContent = "Error initializing. Check console.";
+        }
+        }
+
+        // --- NEW: Firestore Listeners ---
+        function setupListeners() {
+        if (!userId || !appId || !db) {
+        console.error("Cannot setup listeners: missing userId, appId, or db.");
+        return;
+        }
+
+        // Listener for "BEFORE" document
+        const beforeDocRef = doc(db, `artifacts/${appId}/users/${userId}/images/before`);
+        onSnapshot(beforeDocRef, (doc) => {
+        beforeLoader.classList.add('hidden');
+        beforeAnalysisOutput.classList.remove('hidden');
+        renderAnalysis(doc.data(), beforeAnalysisOutput, beforeImageCanvas, beforeCtx, beforeImage);
+        }, (error) => {
+        console.error("Before listener error:", error);
+        beforeAnalysisOutput.textContent = "Error loading data.";
+        });
+
+        // Listener for "AFTER" document
+        const afterDocRef = doc(db, `artifacts/${appId}/users/${userId}/images/after`);
+        onSnapshot(afterDocRef, (doc) => {
+        afterLoader.classList.add('hidden');
+        afterAnalysisOutput.classList.remove('hidden');
+        renderAnalysis(doc.data(), afterAnalysisOutput, afterImageCanvas, afterCtx, afterImage);
+        }, (error) => {
+        console.error("After listener error:", error);
+        afterAnalysisOutput.textContent = "Error loading data.";
+        });
+        }
+
+        // --- Start the app ---
+        initFirebase();
+
     </script>
 </body>
 </html>
