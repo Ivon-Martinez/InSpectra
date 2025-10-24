@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building Crack Detector MVP</title>
+    <!-- 1. Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Simple keyframe animation for the loader */
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        /* Hide the default file input */
+        .hidden-input {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans flex items-center justify-center min-h-screen p-4">
+
+    <!-- Main container centered on the page --><div class="bg-white w-full max-w-2xl p-6 sm:p-8 rounded-xl shadow-lg">
+
+        <!-- Clear title --><h1 class="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-6">
+            Building Crack Detector MVP
+        </h1>
+
+        <!-- File Upload Area --><div class="mb-6">
+            <!-- Styled "Upload Photo" button (label for hidden input) --><label for="file-upload" class="w-full cursor-pointer bg-blue-600 text-white text-center font-medium py-3 px-5 rounded-lg shadow-md hover:bg-blue-700 transition duration-300 block">
+                1. Upload a Photo
+            </label>
+            <input id="file-upload" type="file" accept="image/*" class="hidden-input">
+        </div>
+
+        <!-- "Detect Cracks" button (initially disabled) --><button id="detect-button" class="w-full bg-green-500 text-white font-medium py-3 px-5 rounded-lg shadow-md hover:bg-green-600 transition duration-300 disabled:bg-gray-300 disabled:cursor-not-allowed" disabled>
+            2. Detect Cracks
+        </button>
+
+        <!-- "Results" area (hidden by default) --><div id="results-section" class="mt-8 hidden">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Analysis Results</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <!-- 1. <img> tag to show the user's uploaded photo --><div>
+                    <h3 class="text-lg font-medium text-gray-600 mb-2">Your Image:</h3>
+                    <img id="image-preview" src="#" alt="Uploaded building photo" class="rounded-lg shadow-md w-full object-contain bg-gray-50 min-h-[128px]">
+                </div>
+
+                <!-- 2. <div> for loading spinner and text analysis --><div>
+                    <h3 class="text-lg font-medium text-gray-600 mb-2">AI Analysis:</h3>
+
+                    <!-- <div> for a loading spinner (initially hidden) --><div id="loader" class="flex justify-center items-center h-32 hidden">
+                        <div class="loader"></div>
+                    </div>
+
+                    <!-- <div> where the AI's text analysis will appear --><div id="analysis-output" class="bg-gray-50 p-4 rounded-lg min-h-[128px] text-gray-800 whitespace-pre-wrap">
+                        <!-- AI-generated text will go here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <script>
+        // --- Element References (Hour 2) ---
+        const fileInput = document.getElementById('file-upload');
+        const detectButton = document.getElementById('detect-button');
+        const resultsSection = document.getElementById('results-section');
+        const imagePreview = document.getElementById('image-preview');
+        const analysisOutput = document.getElementById('analysis-output');
+        const loader = document.getElementById('loader'); // Added in Hour 3
+
+        let base64Image = null; // Variable to store Base64 data (Hour 2)
+
+        // --- Event Listener for File Input (Hour 2) ---
+        fileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Use FileReader to read the file as Base64
+        const reader = new FileReader();
+        reader.onload = (e) => {
+        const imageDataUrl = e.target.result;
+
+        // Show the image preview
+        imagePreview.src = imageDataUrl;
+        resultsSection.classList.remove('hidden');
+
+        // Store the base64 data (stripping the prefix)
+        base64Image = imageDataUrl.split(',')[1];
+
+        // Enable the detect button
+        detectButton.disabled = false;
+
+        // Clear old results
+        analysisOutput.textContent = 'Ready to analyze...';
+        };
+        reader.readAsDataURL(file);
+        });
+
+        // --- Event Listener for Detect Button (Hour 3) ---
+        detectButton.addEventListener('click', () => {
+        if (!base64Image) {
+        analysisOutput.textContent = "Error: No image found. Please upload again.";
+        return;
+        }
+        analyzeImage(base64Image);
+        });
+
+        // --- Main API Call Function (Hour 3 & 4) ---
+        async function analyzeImage(base64ImageData) {
+        // 1. Set up UI (Hour 3)
+        loader.classList.remove('hidden');
+        analysisOutput.classList.add('hidden');
+        analysisOutput.textContent = '';
+        detectButton.disabled = true;
+
+        // 2. Define API details (Hour 3)
+        const apiKey = ""; // Leave as-is, Canvas will handle it
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+        // *** UPDATED systemPrompt for detailed crack analysis ***
+        const systemPrompt = `You are an expert structural engineer specializing in home assessments for potential buyers. Your task is to analyze images of building exteriors and interiors for cracks.
+
+        For each visible crack, provide a detailed description including:
+        - **Precise Location:** Describe where it is on the image (e.g., "above the left window frame," "extending diagonally from the top-right corner of the foundation," "along the mortar joint between bricks"). Use visual landmarks.
+        - **Appearance/Type:** Describe its characteristics (e.g., "fine hairline crack," "zigzag/step crack," "vertical crack," "wider than a credit card," "with some spalling/flaking").
+        - **Apparent Severity/Criticality for a Home Buyer:**
+        - **Low:** Cosmetic, minor settlement.
+        - **Medium:** May indicate minor settlement or localized stress; warrants monitoring or minor repair.
+        - **High:** Potentially structural, could indicate significant foundation issues, active movement, or major stress; requires immediate professional inspection by a qualified structural engineer.
+        - **Recommendation:** Briefly suggest the next steps (e.g., "Monitor," "Minor repair by a handyman," "Consult a licensed structural engineer").
+
+        Present the findings using clear, concise bullet points for each crack found.
+        If no cracks are detected, state "No visible cracks detected, appears in good condition."
+        Focus only on cracks. Do not comment on other elements of the house unless they are directly relevant to a crack's location or potential cause.`;
+
+        const userPrompt = "Analyze this image for structural cracks and report your findings as requested, focusing on detail and criticality for a potential home buyer.";
+
+        // 3. Construct the payload (Hour 3)
+        const payload = {
+        contents: [
+        {
+        role: "user",
+        parts: [
+        { text: userPrompt },
+        {
+        inlineData: {
+        mimeType: "image/png", // Assuming PNG, but JPG/etc. also work
+        data: base64ImageData
+        }
+        }
+        ]
+        }
+        ],
+        systemInstruction: {
+        parts: [{ text: systemPrompt }]
+        },
+        };
+
+        // 4. Call the API with exponential backoff (Hour 3)
+        try {
+        const response = await exponentialBackoffFetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+
+        // 5. Displaying Results (Hour 4)
+        const candidate = result.candidates?.[0];
+        if (candidate && candidate.content?.parts?.[0]?.text) {
+        const analysisText = candidate.content.parts[0].text;
+        analysisOutput.textContent = analysisText;
+        } else {
+        console.error("Invalid response structure:", result);
+        analysisOutput.textContent = "Error: Could not parse the analysis. The response may be empty or in an unexpected format.";
+        }
+
+        } catch (error) {
+        console.error("Fetch error:", error);
+        analysisOutput.textContent = `An error occurred: ${error.message}. Please check the console and try again.`;
+        } finally {
+        // 6. Clean up UI (Hour 4)
+        loader.classList.add('hidden');
+        analysisOutput.classList.remove('hidden');
+        detectButton.disabled = false;
+        }
+        }
+
+        // --- Exponential Backoff Helper (Hour 3) ---
+        async function exponentialBackoffFetch(url, options, retries = 5, delay = 1000) {
+        for (let i = 0; i < retries; i++) {
+        try {
+        const response = await fetch(url, options);
+        if (response.status !== 429) { // 429 is "Too Many Requests"
+        return response;
+        }
+        // If 429, wait and retry
+        } catch (error) {
+        // Network errors, etc.
+        if (i === retries - 1) throw error; // Rethrow last error
+        }
+        // Wait for the delay and increase it for next time
+        await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+        }
+        throw new Error("API call failed after multiple retries.");
+        }
+    </script>
+</body>
+</html>
+
